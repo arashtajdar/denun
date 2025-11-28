@@ -1,10 +1,10 @@
 <?php
 // Database configuration from environment variables
-$dbHost = getenv('DB_HOST') ?: 'db';
+$dbHost = getenv('DB_HOST') ?: 'railway';
 $dbPort = getenv('DB_PORT') ?: '3306';
 $dbName = getenv('DB_NAME') ?: 'user_visits';
-$dbUser = getenv('DB_USER') ?: 'denun';
-$dbPass = getenv('DB_PASSWORD') ?: 'denun_password';
+$dbUser = getenv('DB_USER') ?: 'root';
+$dbPass = getenv('DB_PASSWORD') ?: 'hCwShBsncMEStlTvvyToWLXEUSmZFGoJ';
 
 // Function to get real IP address
 function getRealIpAddress()

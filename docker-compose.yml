@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: denun-web
+    ports:
+      - "8080:80"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=user_visits
+      - DB_USER=denun
+      - DB_PASSWORD=denun_password
+    depends_on:
+      - db
+    networks:
+      - denun-network
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    container_name: denun-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=root_password
+      - MYSQL_DATABASE=user_visits
+      - MYSQL_USER=denun
+      - MYSQL_PASSWORD=denun_password
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "3306:3306"
+    networks:
+      - denun-network
+    restart: unless-stopped
+
+networks:
+  denun-network:
+    driver: bridge
+
+volumes:
+  db-data:

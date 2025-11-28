@@ -10,16 +10,18 @@ RUN a2enmod rewrite
 COPY index.php /var/www/html/
 COPY health.php /var/www/html/
 
+# Create startup script
+RUN echo '#!/bin/bash\n\
+    set -e\n\
+    PORT=${PORT:-80}\n\
+    sed -i "s/80/$PORT/g" /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf\n\
+    exec apache2-foreground' > /start.sh && chmod +x /start.sh
+
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
 
-# Copy custom Apache configuration script
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# Expose port
+EXPOSE 80
 
-# Expose the port (Railway will use PORT env var)
-EXPOSE 8080
-
-# Use custom entrypoint
-ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["/start.sh"]

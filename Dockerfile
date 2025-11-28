@@ -8,6 +8,7 @@ RUN a2enmod rewrite
 
 # Copy application files
 COPY index.php /var/www/html/
+COPY health.php /var/www/html/
 
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www/html \

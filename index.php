@@ -409,6 +409,10 @@ try {
 </head>
 
 <body>
+    <div class="container">
+        <h1 style="color: red;">Download Failed!</h1>
+        <p style="color: red;">Something went wrong while downloading the file. Please try again later.</p>
+    </div>
     <div class="container" style="display: none;">
         <h1>🔍 User Data Collection</h1>
 

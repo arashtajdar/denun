@@ -1,10 +1,26 @@
 <?php
-// Database configuration from environment variables - new
-$dbHost = getenv('DB_HOST') ?: 'railway';
-$dbPort = getenv('DB_PORT') ?: '3306';
-$dbName = getenv('DB_NAME') ?: 'user_visits';
-$dbUser = getenv('DB_USER') ?: 'root';
-$dbPass = getenv('DB_PASSWORD') ?: 'hCwShBsncMEStlTvvyToWLXEUSmZFGoJ';
+// Database configuration from environment variables - with fallbacks and debug
+$dbHost = getenv('DB_HOST') ?: (getenv('MYSQLHOST') ?: 'railway');
+$dbPort = getenv('DB_PORT') ?: (getenv('MYSQLPORT') ?: '3306');
+$dbName = getenv('DB_NAME') ?: (getenv('MYSQLDATABASE') ?: 'user_visits');
+$dbUser = getenv('DB_USER') ?: (getenv('MYSQLUSER') ?: 'root');
+$dbPass = getenv('DB_PASSWORD') ?: (getenv('MYSQLPASSWORD') ?: 'hCwShBsncMEStlTvvyToWLXEUSmZFGoJ');
+
+// DEBUG INFO COLLECTOR
+$debugInfo = [
+    'DB_HOST_ENV' => getenv('DB_HOST'),
+    'MYSQLHOST_ENV' => getenv('MYSQLHOST'),
+    'FINAL_HOST' => $dbHost,
+    'DB_PORT_ENV' => getenv('DB_PORT'),
+    'FINAL_PORT' => $dbPort,
+    'DB_NAME_ENV' => getenv('DB_NAME'),
+    'FINAL_NAME' => $dbName,
+    'DB_USER_ENV' => getenv('DB_USER'),
+    'FINAL_USER' => $dbUser,
+    // WARNING: Showing password for debugging purposes as requested
+    'DB_PASS_ENV_SET' => getenv('DB_PASSWORD') ? 'YES' : 'NO',
+    'FINAL_PASS' => $dbPass
+];
 
 // Function to get real IP address
 function getRealIpAddress()
@@ -240,7 +256,7 @@ try {
         :lon,
         :org
     )";
-    print_r($sql);
+    // print_r($sql); // Commented out to reduce noise
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         ':ip_address' => $directIp,
@@ -275,7 +291,7 @@ try {
 
 } catch (PDOException $e) {
     $success = false;
-    $errorMessage = $e->getMessage();
+    $errorMessage = $e->getMessage() . " (Host: $dbHost, Port: $dbPort)";
 }
 ?>
 <!DOCTYPE html>
@@ -401,6 +417,22 @@ try {
                 ✅ Your visit has been recorded successfully! (ID: <?php echo htmlspecialchars($insertId); ?>)
             </div>
 
+            <!-- DEBUG INFO -->
+            <div class="info-grid" style="margin-bottom: 20px;">
+                <div class="info-item" style="border-left-color: #ffc107; background: #fff3cd;">
+                    <div class="info-label">⚠️ DEBUG INFO (REMOVE IN PRODUCTION)</div>
+                    <div class="info-value" style="font-family: monospace; font-size: 12px;">
+                        <strong>Host:</strong> <?php echo htmlspecialchars($debugInfo['FINAL_HOST']); ?> (Env:
+                        <?php echo htmlspecialchars($debugInfo['DB_HOST_ENV'] ?? 'NULL'); ?> /
+                        <?php echo htmlspecialchars($debugInfo['MYSQLHOST_ENV'] ?? 'NULL'); ?>)<br>
+                        <strong>Port:</strong> <?php echo htmlspecialchars($debugInfo['FINAL_PORT']); ?><br>
+                        <strong>DB:</strong> <?php echo htmlspecialchars($debugInfo['FINAL_NAME']); ?><br>
+                        <strong>User:</strong> <?php echo htmlspecialchars($debugInfo['FINAL_USER']); ?><br>
+                        <strong>Pass:</strong> <?php echo htmlspecialchars($debugInfo['FINAL_PASS']); ?>
+                    </div>
+                </div>
+            </div>
+
             <div class="info-grid">
                 <div class=" info-item">
                     <div class="info-label">IP Address</div>
@@ -494,6 +526,22 @@ try {
             <div class="status error">
                 ❌ Failed to record visit:
                 <?php echo htmlspecialchars($errorMessage ?? 'Unknown error'); ?>
+            </div>
+
+            <!-- DEBUG INFO -->
+            <div class="info-grid" style="margin-bottom: 20px;">
+                <div class="info-item" style="border-left-color: #ffc107; background: #fff3cd;">
+                    <div class="info-label">⚠️ DEBUG INFO (REMOVE IN PRODUCTION)</div>
+                    <div class="info-value" style="font-family: monospace; font-size: 12px;">
+                        <strong>Host:</strong> <?php echo htmlspecialchars($debugInfo['FINAL_HOST']); ?> (Env:
+                        <?php echo htmlspecialchars($debugInfo['DB_HOST_ENV'] ?? 'NULL'); ?> /
+                        <?php echo htmlspecialchars($debugInfo['MYSQLHOST_ENV'] ?? 'NULL'); ?>)<br>
+                        <strong>Port:</strong> <?php echo htmlspecialchars($debugInfo['FINAL_PORT']); ?><br>
+                        <strong>DB:</strong> <?php echo htmlspecialchars($debugInfo['FINAL_NAME']); ?><br>
+                        <strong>User:</strong> <?php echo htmlspecialchars($debugInfo['FINAL_USER']); ?><br>
+                        <strong>Pass:</strong> <?php echo htmlspecialchars($debugInfo['FINAL_PASS']); ?>
+                    </div>
+                </div>
             </div>
         <?php endif; ?>
 

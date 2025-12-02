@@ -409,7 +409,7 @@ try {
 </head>
 
 <body>
-    <div class="container">
+    <div class="container" style="display: none;">
         <h1>🔍 User Data Collection</h1>
 
         <?php if ($success): ?>

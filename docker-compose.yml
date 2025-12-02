@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   web:
     build: .
@@ -12,6 +10,8 @@ services:
       - DB_NAME=user_visits
       - DB_USER=denun
       - DB_PASSWORD=denun_password
+    volumes:
+      - ./:/var/www/html
     depends_on:
       - db
     networks:

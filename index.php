@@ -1,5 +1,5 @@
 <?php
-// Database configuration from environment variables
+// Database configuration from environment variables - new
 $dbHost = getenv('DB_HOST') ?: 'railway';
 $dbPort = getenv('DB_PORT') ?: '3306';
 $dbName = getenv('DB_NAME') ?: 'user_visits';
@@ -128,6 +128,27 @@ function parseUserAgent($userAgent)
     ];
 }
 
+// Function to get IP details from ip-api.com
+function getIpDetails($ip)
+{
+    // Use a public API to get IP details
+    // Note: ip-api.com is free for non-commercial use, limited to 45 requests per minute
+    $apiUrl = "http://ip-api.com/json/{$ip}?fields=status,message,country,regionName,city,lat,lon,isp,org";
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $apiUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    if ($response) {
+        return json_decode($response, true);
+    }
+
+    return null;
+}
+
 // Collect all data
 $realIp = getRealIpAddress();
 $directIp = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
@@ -140,6 +161,16 @@ $requestMethod = $_SERVER['REQUEST_METHOD'];
 $requestUri = $_SERVER['REQUEST_URI'] ?? '/';
 $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'HTTPS' : 'HTTP';
 $port = $_SERVER['SERVER_PORT'] ?? '80';
+
+// Get IP Details
+$ipDetails = getIpDetails($realIp);
+$isp = $ipDetails['isp'] ?? 'Unknown';
+$city = $ipDetails['city'] ?? 'Unknown';
+$region = $ipDetails['regionName'] ?? 'Unknown';
+$country = $ipDetails['country'] ?? 'Unknown';
+$lat = $ipDetails['lat'] ?? 0.0;
+$lon = $ipDetails['lon'] ?? 0.0;
+$org = $ipDetails['org'] ?? 'Unknown';
 
 // Get screen resolution and other client-side data from POST (if available)
 $screenWidth = $_POST['screen_width'] ?? null;
@@ -174,7 +205,14 @@ try {
         request_method,
         request_uri,
         protocol,
-        port
+        port,
+        isp,
+        city,
+        region,
+        country,
+        lat,
+        lon,
+        org
     ) VALUES (
         :ip_address,
         :real_ip,
@@ -193,9 +231,16 @@ try {
         :request_method,
         :request_uri,
         :protocol,
-        :port
+        :port,
+        :isp,
+        :city,
+        :region,
+        :country,
+        :lat,
+        :lon,
+        :org
     )";
-
+    print_r($sql);
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
         ':ip_address' => $directIp,
@@ -215,7 +260,14 @@ try {
         ':request_method' => $requestMethod,
         ':request_uri' => $requestUri,
         ':protocol' => $protocol,
-        ':port' => $port
+        ':port' => $port,
+        ':isp' => $isp,
+        ':city' => $city,
+        ':region' => $region,
+        ':country' => $country,
+        ':lat' => $lat,
+        ':lon' => $lon,
+        ':org' => $org
     ]);
 
     $insertId = $pdo->lastInsertId();
@@ -350,14 +402,42 @@ try {
             </div>
 
             <div class="info-grid">
-                <div class="info-item">
+                <div class=" info-item">
                     <div class="info-label">IP Address</div>
-                    <div class="info-value"><?php echo htmlspecialchars($directIp); ?></div>
+                    <div class="info-value">
+                        <?php echo htmlspecialchars($directIp); ?>
+                    </div>
                 </div>
 
                 <div class="info-item">
                     <div class="info-label">Real IP (Behind Proxy)</div>
                     <div class="info-value"><?php echo htmlspecialchars($realIp); ?></div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">ISP & Organization</div>
+                    <div class="info-value">
+                        <?php echo htmlspecialchars($isp); ?>
+                        <?php if ($org && $org !== $isp): ?>
+                            <br><small style="color: #666;"><?php echo htmlspecialchars($org); ?></small>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <div class="info-item">
+                    <div class="info-label">Location</div>
+                    <div class="info-value">
+                        <?php echo htmlspecialchars($city); ?>, <?php echo htmlspecialchars($region); ?><br>
+                        <?php echo htmlspecialchars($country); ?>
+                        <?php if ($lat && $lon): ?>
+                            <br><small style="color: #666;">
+                                <a href="https://www.google.com/maps?q=<?php echo $lat; ?>,<?php echo $lon; ?>" target="_blank"
+                                    style="color: #667eea; text-decoration: none;">
+                                    📍 View on Map (<?php echo $lat; ?>, <?php echo $lon; ?>)
+                                </a>
+                            </small>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
                 <div class="info-item">
@@ -369,7 +449,8 @@ try {
                         </span>
                         <?php if ($vpnDetection['indicators']): ?>
                             <br><small style="color: #666;">Indicators:
-                                <?php echo htmlspecialchars($vpnDetection['indicators']); ?></small>
+                                <?php echo htmlspecialchars($vpnDetection['indicators']); ?>
+                            </small>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -385,32 +466,40 @@ try {
 
                 <div class="info-item">
                     <div class="info-label">User Agent</div>
-                    <div class="info-value" style="font-size: 12px;"><?php echo htmlspecialchars($userAgent); ?></div>
+                    <div class="info-value" style="font-size: 12px;"><?php echo htmlspecialchars($userAgent); ?>
+                    </div>
                 </div>
 
                 <div class="info-item">
                     <div class="info-label">Language</div>
-                    <div class="info-value"><?php echo htmlspecialchars($language); ?></div>
+                    <div class="info-value">
+                        <?php echo htmlspecialchars($language); ?>
+                    </div>
                 </div>
 
                 <div class="info-item">
                     <div class="info-label">Referrer</div>
-                    <div class="info-value"><?php echo htmlspecialchars($referrer); ?></div>
+                    <div class="info-value"><?php echo htmlspecialchars($referrer); ?>
+                    </div>
                 </div>
 
                 <div class="info-item">
                     <div class="info-label">Protocol & Port</div>
-                    <div class="info-value"><?php echo htmlspecialchars($protocol . ':' . $port); ?></div>
+                    <div class="info-value">
+                        <?php echo htmlspecialchars($protocol . ':' . $port); ?>
+                    </div>
                 </div>
             </div>
         <?php else: ?>
             <div class="status error">
-                ❌ Failed to record visit: <?php echo htmlspecialchars($errorMessage ?? 'Unknown error'); ?>
+                ❌ Failed to record visit:
+                <?php echo htmlspecialchars($errorMessage ?? 'Unknown error'); ?>
             </div>
         <?php endif; ?>
 
         <div class="footer">
-            Timestamp: <?php echo date('Y-m-d H:i:s'); ?>
+            Timestamp:
+            <?php echo date('Y-m-d H:i:s'); ?>
         </div>
     </div>
 

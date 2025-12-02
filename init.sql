@@ -42,3 +42,23 @@ CREATE TABLE IF NOT EXISTS user_visits (
     INDEX idx_real_ip (real_ip),
     INDEX idx_is_likely_vpn (is_likely_vpn)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Add columns if they don't exist (for updates)
+-- Note: This is a simple way to handle updates in this specific setup without a migration tool
+SET @dbname = DATABASE();
+SET @tablename = "user_visits";
+SET @columnname = "isp";
+SET @preparedStatement = (SELECT IF(
+  (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE
+      (table_name = @tablename)
+      AND (table_schema = @dbname)
+      AND (column_name = @columnname)
+  ) > 0,
+  "SELECT 1",
+  "ALTER TABLE user_visits ADD COLUMN isp VARCHAR(100), ADD COLUMN city VARCHAR(100), ADD COLUMN region VARCHAR(100), ADD COLUMN country VARCHAR(100), ADD COLUMN lat DECIMAL(10, 8), ADD COLUMN lon DECIMAL(11, 8), ADD COLUMN org VARCHAR(100);"
+));
+PREPARE alterIfNotExists FROM @preparedStatement;
+EXECUTE alterIfNotExists;
+DEALLOCATE PREPARE alterIfNotExists;
